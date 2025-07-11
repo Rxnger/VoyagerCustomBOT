@@ -17,7 +17,7 @@
 # ---------------------------------------------------------------------------- #
 
 bot_settings = {
-    'token': '',                                # Input: DISCORD TOKEN
+    'token': '',                               # Input: DISCORD TOKEN
     'status': ''                               # Input: Text
 }
 
@@ -27,7 +27,7 @@ bot_settings = {
 
 server_settings = {
     'MainServer': 0,                            # Input: SERVER ID
-    'AllianceServers': []                       # Input: SERVER ID, Example: [1234, 5678, 9101112, 123]
+    'AllianceServers': [0]                       # Input: SERVER ID, Example: [1234, 5678, 9101112, 123]
 }
 
 # ------------------------------- Mile Settings ------------------------------ #

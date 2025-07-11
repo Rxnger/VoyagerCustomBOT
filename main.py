@@ -13,6 +13,9 @@
 # ---------------------------------- Imports --------------------------------- #
 # Here are the system imports and packages that run the system.
 # ---------------------------------------------------------------------------- #
+import sys
+sys.dont_write_bytecode = True
+# ---------------------------------------------------------------------------- #
 import json
 import discord
 import requests
@@ -30,6 +33,11 @@ from settings import server_settings, bot_settings, mile_settings
 Roblox = Client()
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="?", intents=intents)
+# ---------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+print('--------------------------------------------------------------------------')
+print('|                   [ Voyager ] Discord Module Runner                    |')
+print('--------------------------------------------------------------------------')
 # ---------------------------------------------------------------------------- #
 
 # ----------------------------- Background Tasks ----------------------------- #
@@ -71,8 +79,14 @@ def SuccessEmbed(Prompt):
 # ---------------------------------------------------------------------------- #
 @bot.event
 async def on_ready():
-    print(f"Bot is ready. Logged in as {bot.user}")
-
+    print('|                                |')
+    print(f'|   {datetime.datetime.now()}   |   [ 🟢 ] Connected to Discord: {bot.user} ({bot.user.id})') #type:ignore
+    print('|                                |')
+    
+    await bot.change_presence(
+        status=discord.Status.online,
+        activity=discord.CustomActivity(name=bot_settings['status'])
+    )
     Sync_BOT_Commands.start()
 # ---------------------------------------------------------------------------- #
 
@@ -84,66 +98,188 @@ class AdminGroup(app_commands.Group):
         super().__init__(name="miles", description="Voyager Miles API Commands")
     
     @app_commands.command(name='fetch', description='Fetch the miles amount a player has in the server')
-    async def miles_Fetch(self, interaction: discord.Interaction, roblox: str = None):#type:ignore
+    @app_commands.describe(
+        roblox = 'Roblox Username'
+    )
+    async def miles_Fetch(self, interaction: discord.Interaction, roblox: str):#type:ignore
         try:
             await interaction.response.defer()
+            if interaction.guild.id in server_settings['AllianceServers'] or interaction.guild.id == server_settings['MainServer']: #type:ignore
             
-            try:
-                user = await Roblox.get_user_by_username(roblox)
+                try:
+                    user = await Roblox.get_user_by_username(roblox)
+                    
+                except:
+                    user = None
                 
-            except:
-                user = None
+                if user is not None:
+                    serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
+                                        headers={'Authorization': mile_settings['Password']},
+                                        params={
+                                            'server': server_settings['MainServer']
+                                        })
+                    
+                    milesdata = requests.get('https://api.voyagersys.xyz/miles/points/', 
+                                        headers={'Authorization': mile_settings['Password']},
+                                        params={
+                                            'server': server_settings['MainServer'],
+                                            'roblox': roblox
+                                        })
+                    
+                    if serverdata.status_code == 200 and milesdata.status_code == 200:
+                        serverdata = json.loads(serverdata.content)
+                        amount = json.loads(milesdata.content).get('Amount')
+
+                        embed = discord.Embed(
+                            description=f'**{user.display_name} ([@{user.name}](https://www.roblox.com/users/{user.id}/profile))** currently has `{amount}` miles', #type:ignore
+                            color=int(str(serverdata['Color']).replace('#', '0x'), 16)
+                        )
+
+                        embed.set_author(name=f'{serverdata['Miles']}')
+                        view = discord.ui.View()
+                        button = discord.ui.Button(style=discord.ButtonStyle.link, url=f'https://voyagersys.xyz/leaderboard/?roblox={user.id}', label=f'{user.name}\'s Miles') #type:ignore
+                        
+                        view.add_item(button)
+                        
+                        await interaction.followup.send(embed=embed, view=view)
+                    
+                    elif serverdata.status_code != 200:
+                        error = ErrorEmbed(str(serverdata.content))
+                        await interaction.followup.send(embed=error['embed'])
+                        
+                    elif milesdata.status_code != 200:
+                        error = ErrorEmbed(str(milesdata.content))
+                        await interaction.followup.send(embed=error['embed'])   
+                else:
+                    error = ErrorEmbed('Roblox user has not been found')
+                    await interaction.followup.send(embed=error['embed']) 
             
-            if user is not None:
-                serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
-                                    headers={'Authorization': mile_settings['Password']},
-                                    params={
-                                        'server': server_settings['MainServer']
-                                    })
-                
-                milesdata = requests.get('https://api.voyagersys.xyz/miles/points/', 
-                                    headers={'Authorization': mile_settings['Password']},
-                                    params={
-                                        'server': server_settings['MainServer'],
-                                        'roblox': roblox
-                                    })
-                
-                if serverdata.status_code == 200 and milesdata.status_code == 200:
-                    serverdata = json.loads(serverdata.content)
-                    amount = json.loads(milesdata.content).get('Amount')
-
-                    embed = discord.Embed(
-                        description=f'**{user.display_name} ([@{user.name}](https://www.roblox.com/users/{user.id}/profile))** currently has `{amount}` miles', #type:ignore
-                        color=serverdata['Color']
-                    )
-
-                    embed.set_author(name=f'{serverdata['Name']}')
-                    view = discord.ui.View()
-                    button = discord.ui.Button(style=discord.ButtonStyle.link, url=f'https://voyagersys.xyz/leaderboard/?roblox={user.id}', label=f'{user.name}\'s Miles') #type:ignore
-                    
-                    view.add_item(button)
-                    
-                    await interaction.followup.send(embed=embed, view=view)
-                
-                elif serverdata.status_code != 200:
-                    error = ErrorEmbed(str(serverdata.content))
-                    await interaction.followup.send(embed=error['embed'])
-                    
-                elif milesdata.status_code != 200:
-                    error = ErrorEmbed(str(milesdata.content))
-                    await interaction.followup.send(embed=error['embed'])   
             else:
-                error = ErrorEmbed('Roblox user has not been found')
-                await interaction.followup.send(embed=error['embed']) 
-                
+                error = ErrorEmbed('This server is not authorized to use this bot')
+                await interaction.followup.send(embed=error['embed'])  
         except Exception as err:
             error = ErrorEmbed(str(err))
             await interaction.followup.send(embed=error['embed'])
     
-# Slash command
-@bot.tree.command(name="hello", description="Say hello!")
-async def hello_command(interaction: discord.Interaction):
-    await interaction.response.send_message(f"Hello {interaction.user.name}!", ephemeral=True)
+    @app_commands.command(name='add', description='Add  miles amount to a player\'s account')
+    @app_commands.checks.has_permissions(administrator = True)
+    @app_commands.describe(
+        roblox = 'Roblox Username',
+        amount = 'How much do you want to add to the user?'
+    )
+    async def miles_Add(self, interaction: discord.Interaction, roblox: str, amount: int):#type:ignore
+        try:
+            await interaction.response.defer()
+            if interaction.guild.id in server_settings['AllianceServers'] or interaction.guild.id == server_settings['MainServer']: #type:ignore
+            
+                try:
+                    user = await Roblox.get_user_by_username(roblox)
+                    
+                except:
+                    user = None
+                
+                if user is not None:
+                    serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
+                                        headers={'Authorization': mile_settings['Password']},
+                                        params={
+                                            'server': server_settings['MainServer']
+                                        })
+                    
+                    milesdata = requests.post('https://api.voyagersys.xyz/miles/points/', 
+                                        headers={'Authorization': mile_settings['Password']},
+                                        params={
+                                            'server': server_settings['MainServer'],
+                                            'roblox': roblox,
+                                            'amount': amount,
+                                            'author': f'Manually added via Custom Discord BOT (Author: {interaction.user.name} - {interaction.user.id})'
+                                        })
+                    
+                    if serverdata.status_code == 200 and milesdata.status_code == 200:
+                        serverdata = json.loads(serverdata.content)
+
+                       
+                        await interaction.followup.send(embed=SuccessEmbed(f'Successfully added `{amount}` to **{user.display_name} ([@{user.name}](https://www.roblox.com/users/{user.id}/profile))**\'s account')['embed'])
+                    
+                    elif serverdata.status_code != 200:
+                        error = ErrorEmbed(str(serverdata.content))
+                        await interaction.followup.send(embed=error['embed'])
+                        
+                    elif milesdata.status_code != 200:
+                        error = ErrorEmbed(str(milesdata.content))
+                        await interaction.followup.send(embed=error['embed'])   
+                else:
+                    error = ErrorEmbed('Roblox user has not been found')
+                    await interaction.followup.send(embed=error['embed']) 
+            
+            else:
+                error = ErrorEmbed('This server is not authorized to use this bot')
+                await interaction.followup.send(embed=error['embed'])  
+        except Exception as err:
+            error = ErrorEmbed(str(err))
+            await interaction.followup.send(embed=error['embed'])
+    
+    @app_commands.command(name='remove', description='Remove  miles amount from a player\'s account')
+    @app_commands.checks.has_permissions(administrator = True)
+    @app_commands.describe(
+        roblox = 'Roblox Username',
+        amount = 'How much do you want to remove from the user?'
+    )
+    async def miles_remove(self, interaction: discord.Interaction, roblox: str, amount: int):#type:ignore
+        try:
+            await interaction.response.defer()
+            if interaction.guild.id in server_settings['AllianceServers'] or interaction.guild.id == server_settings['MainServer']: #type:ignore
+            
+                try:
+                    user = await Roblox.get_user_by_username(roblox)
+                    
+                except:
+                    user = None
+                
+                if user is not None:
+                    serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
+                                        headers={'Authorization': mile_settings['Password']},
+                                        params={
+                                            'server': server_settings['MainServer']
+                                        })
+                    
+                    milesdata = requests.post('https://api.voyagersys.xyz/miles/points/', 
+                                        headers={'Authorization': mile_settings['Password']},
+                                        params={
+                                            'server': server_settings['MainServer'],
+                                            'roblox': roblox,
+                                            'amount': -amount,
+                                            'author': f'Manually removed via Custom Discord BOT (Author: {interaction.user.name} - {interaction.user.id})'
+                                        })
+                    
+                    if serverdata.status_code == 200 and milesdata.status_code == 200:
+                        serverdata = json.loads(serverdata.content)
+
+                        
+                        await interaction.followup.send(embed=SuccessEmbed(f'Successfully added `{amount}` to **{user.display_name} ([@{user.name}](https://www.roblox.com/users/{user.id}/profile))**\'s account')['embed'])
+
+                    
+                    elif serverdata.status_code != 200:
+                        error = ErrorEmbed(str(serverdata.content))
+                        await interaction.followup.send(embed=error['embed'])
+                        
+                    elif milesdata.status_code != 200:
+                        error = ErrorEmbed(str(milesdata.content))
+                        await interaction.followup.send(embed=error['embed'])   
+                else:
+                    error = ErrorEmbed('Roblox user has not been found')
+                    await interaction.followup.send(embed=error['embed']) 
+            
+            else:
+                error = ErrorEmbed('This server is not authorized to use this bot')
+                await interaction.followup.send(embed=error['embed'])  
+        except Exception as err:
+            error = ErrorEmbed(str(err))
+            await interaction.followup.send(embed=error['embed'])
+    
+    
+admin_group = AdminGroup()
+bot.tree.add_command(admin_group)
+# ---------------------------------------------------------------------------- #
 
 # Run the bot
 bot.run(bot_settings['token'])
