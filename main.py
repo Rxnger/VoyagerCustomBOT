@@ -162,7 +162,7 @@ class AdminGroup(app_commands.Group):
             await interaction.followup.send(embed=error['embed'])
     
     @app_commands.command(name='add', description='Add  miles amount to a player\'s account')
-    @app_commands.checks.has_permissions(administrator = True)
+    @app_commands.checks.has_permissions(administrator = True)  # Change this to suit your server's permission
     @app_commands.describe(
         roblox = 'Roblox Username',
         amount = 'How much do you want to add to the user?'
@@ -219,7 +219,7 @@ class AdminGroup(app_commands.Group):
             await interaction.followup.send(embed=error['embed'])
     
     @app_commands.command(name='remove', description='Remove  miles amount from a player\'s account')
-    @app_commands.checks.has_permissions(administrator = True)
+    @app_commands.checks.has_permissions(administrator = True) # Change this to suit your server's permission
     @app_commands.describe(
         roblox = 'Roblox Username',
         amount = 'How much do you want to remove from the user?'
@@ -276,6 +276,15 @@ class AdminGroup(app_commands.Group):
             error = ErrorEmbed(str(err))
             await interaction.followup.send(embed=error['embed'])
     
+    @miles_Add.error
+    async def add_error(self, interaction, error):
+        data = ErrorEmbed(str(error))
+        await interaction.response.send_message(embed=data['embed'], ephemeral=True)   
+        
+    @miles_remove.error
+    async def remove_error(self, interaction, error):
+        data = ErrorEmbed(str(error))
+        await interaction.response.send_message(embed=data['embed'], ephemeral=True)   
     
 admin_group = AdminGroup()
 bot.tree.add_command(admin_group)
