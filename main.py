@@ -113,13 +113,13 @@ class AdminGroup(app_commands.Group):
                     user = None
                 
                 if user is not None:
-                    serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
+                    serverdata = requests.get('https://voyagersys.xyz/api/miles/configuration/', 
                                         headers={'Authorization': mile_settings['Password']},
                                         params={
                                             'server': server_settings['MainServer']
                                         })
                     
-                    milesdata = requests.get('https://api.voyagersys.xyz/miles/points/', 
+                    milesdata = requests.get('https://voyagersys.xyz/api/miles/points/', 
                                         headers={'Authorization': mile_settings['Password']},
                                         params={
                                             'server': server_settings['MainServer'],
@@ -179,13 +179,13 @@ class AdminGroup(app_commands.Group):
                     user = None
                 
                 if user is not None:
-                    serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
+                    serverdata = requests.get('https://voyagersys.xyz/api/miles/configuration/', 
                                         headers={'Authorization': mile_settings['Password']},
                                         params={
                                             'server': server_settings['MainServer']
                                         })
                     
-                    milesdata = requests.post('https://api.voyagersys.xyz/miles/points/', 
+                    milesdata = requests.post('https://voyagersys.xyz/api/miles/points/', 
                                         headers={'Authorization': mile_settings['Password']},
                                         params={
                                             'server': server_settings['MainServer'],
@@ -236,13 +236,13 @@ class AdminGroup(app_commands.Group):
                     user = None
                 
                 if user is not None:
-                    serverdata = requests.get('https://api.voyagersys.xyz/miles/configuration/', 
+                    serverdata = requests.get('https://voyagersys.xyz/api/miles/configuration/', 
                                         headers={'Authorization': mile_settings['Password']},
                                         params={
                                             'server': server_settings['MainServer']
                                         })
                     
-                    milesdata = requests.post('https://api.voyagersys.xyz/miles/points/', 
+                    milesdata = requests.post('https://voyagersys.xyz/api/miles/points/', 
                                         headers={'Authorization': mile_settings['Password']},
                                         params={
                                             'server': server_settings['MainServer'],
