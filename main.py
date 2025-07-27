@@ -96,10 +96,11 @@ async def miles_Fetch(interaction: discord.Interaction, roblox: str):#type:ignor
                 
                 if serverdata.status_code == 200 and milesdata.status_code == 200:
                     serverdata = json.loads(serverdata.content)
-                    amount = json.loads(milesdata.content).get('Amount')
-
+                    amount = json.loads(milesdata.content)
+                    print(serverdata)
+                    print(amount)
                     embed = discord.Embed(
-                        description=f'**{user.display_name} ([@{user.name}](https://www.roblox.com/users/{user.id}/profile))** currently has `{amount}` miles', #type:ignore
+                        description=f'**{user.display_name} ([@{user.name}](https://www.roblox.com/users/{user.id}/profile))** currently has `{amount['Amount']}` miles', #type:ignore
                         color=int(str(serverdata['Color']).replace('#', '0x'), 16)
                     )
 
